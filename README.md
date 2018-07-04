@@ -8,6 +8,8 @@ In short it deploys a VPC, IGW, Default Route, Subnets and Security Groups. Then
 
 Tested with up to 2 loadbalancers and 3 webservers.
 
+SELinux ENABLED
+
 ## Requirements
 - Boto
 - Ansible
