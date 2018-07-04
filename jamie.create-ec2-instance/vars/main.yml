@@ -1,0 +1,7 @@
+---
+# vars file for jamie.create-ec2-instance
+ami: "{{ aws_ami_id }}"
+keypair: "{{ aws_key_pair }}"
+security_group_id: "{{ vpc_sec_group.group_id }}"
+target_vpc_subnet_id: "{{ vpc_subnet_result.subnet.id }}"
+instance_type: t2.micro

@@ -1,0 +1,22 @@
+---
+# tasks file for jamie.install-httpd
+- name: Install httpd package
+  yum:
+    name: httpd
+    state: latest
+
+- name: Start and enable the httpd service
+  service:
+    name: httpd
+    state: started
+    enabled: true
+
+- name: Run the Setup module to update to the latest veriso of facts
+  setup:
+
+- name: Create "{{ httpd_vhost_directory }}"  directory to serve content
+  file:
+    path: "{{ httpd_vhost_directory }}"
+    state: directory
+    recurse: true
+  register: httpd_vhost_directory_present

@@ -1,0 +1,8 @@
+---
+# defaults file for jamie.create-vpc
+aws_project_name:
+aws_vpc_name:
+aws_vpc_cidr_block:
+aws_vpc_region:
+aws_vpc_tenancy: default
+aws_vpc_subnet_cidr_block:

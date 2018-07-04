@@ -1,0 +1,26 @@
+#AWS VPC Settings
+aws_vpc_region: ap-southeast-2
+aws_ami_id: ami-67589505
+aws_key_pair: key-pair-example
+aws_vpc_tenancy: default
+aws_project_name:
+aws_vpc_name: example-vpc-name
+aws_vpc_cidr_block: 192.168.0.0/16
+aws_vpc_subnet_cidr_block: 192.168.1.0/24
+
+
+#Security Groups Rules
+sg_rules_loadbalancer:
+  - proto: tcp
+    ports: 80
+    cidr_ip: "{{ public_ip.ansible_facts.ipify_public_ip }}/32"
+  - proto: tcp
+    ports: 22
+    cidr_ip: "{{ public_ip.ansible_facts.ipify_public_ip }}/32"
+sg_rules_web:
+  - proto: tcp
+    ports: 80
+    cidr_ip: "{{ aws_vpc_subnet_cidr_block }}"
+  - proto: tcp
+    ports: 22
+    cidr_ip: "{{ public_ip.ansible_facts.ipify_public_ip }}/32"

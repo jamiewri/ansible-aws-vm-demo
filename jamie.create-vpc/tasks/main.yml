@@ -1,0 +1,49 @@
+---
+# tasks file for jamie.create-vpc
+- name: Create VPC {{ aws_vpc_name }}
+  ec2_vpc_net:
+    name: "{{ aws_vpc_name }}"
+    cidr_block: "{{ aws_vpc_cidr_block }}"
+    region: "{{ aws_vpc_region }}"
+    tenancy: "{{ aws_vpc_tenancy }}"
+    tags:
+      created_with: ansible
+  register: vpc_result
+
+- name: Create subnet for {{ aws_vpc_name }}
+  ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{ vpc_result.vpc.id }}"
+    cidr: "{{ aws_vpc_subnet_cidr_block }}"
+    resource_tags:
+      Name: "{{ aws_vpc_name }} subnet"
+      created_with: ansible
+  register: vpc_subnet_result
+
+- name: Add internet gateway for the {{ aws_vpc_name }} vpc
+  ec2_vpc_igw:
+    vpc_id: "{{ vpc_result.vpc.id }}"
+    state: present
+    region: "{{ aws_vpc_region }}"
+    resource_tags:
+      Name: "{{ aws_vpc_name }} IGW"
+  register: vpc_igw_result
+
+- name: Create default route
+  ec2_vpc_route_table:
+    vpc_id: "{{ vpc_result.vpc.id }}"
+    region: "{{ aws_vpc_region }}"
+    tags:
+      Name: Default route
+    subnets:
+      - "{{ vpc_subnet_result.subnet.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ vpc_igw_result.gateway_id }}"
+  register: public_route_table
+
+- name: Get Public IP
+  ipify_facts:
+  register: public_ip
+
+- meta: refresh_inventory

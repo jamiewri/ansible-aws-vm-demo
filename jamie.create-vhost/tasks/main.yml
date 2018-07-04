@@ -1,0 +1,72 @@
+---
+- name: Create vhost directory to serve content for "{{ vhost_webserver_address }}"
+  file:
+    path: "{{ httpd_vhost_directory }}/{{ vhost_webserver_address }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+  register: filecontext
+
+- name: Install the index file with j2 template for "{{ vhost_webserver_address }}"
+  template:
+    src: index.html.j2
+    dest: "{{ httpd_vhost_directory }}/{{ vhost_webserver_address }}/index.html"
+    owner: root
+    group: root
+    mode: 0744
+  register: filecontext
+
+- name: Find pattern in array of config files
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    state: present
+    line: "{{ item.line }}"
+    regexp: "{{ item.regex }}"
+  with_items:
+    - { line: "Listen {{ vhost_webserver_port }}", regex: "^Listen {{ vhost_webserver_port }}$" }
+
+- name: Install the vhost config file with j2 template for "{{ vhost_webserver_address }}"
+  template:
+    src: vhost.conf.j2
+    dest: "/etc/httpd/conf.d/{{ vhost_webserver_address }}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  notify: httpd_restart 
+
+# SELinux Config
+- name: Install semanage tool and dependancies
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - libselinux-python
+    - policycoreutils-python
+  when: se_linux_required is defined
+
+- name: Set SELinux file context on vhosts document root
+  sefcontext:
+    target: "{{ httpd_vhost_directory }}/{{ vhost_webserver_address }}(/.*)"
+    setype: httpd_sys_content_t
+    state: present
+  when: se_linux_required is defined
+  register: filecontext
+
+- name: Run restore context to reload selinux
+  shell: restorecon -R -v "{{ httpd_vhost_directory }}/{{ vhost_webserver_address }}"
+  when: filecontext.changed
+
+- name: Enable SELinux
+  selinux:
+    policy: targeted
+    state: enforcing
+  when: se_linux_required is defined
+
+- name: Create SELnux Port type
+  seport:
+    ports: "{{ vhost_webserver_port }}"
+    proto: tcp
+    setype: http_port_t
+    state: present
+  when: se_linux_required is defined

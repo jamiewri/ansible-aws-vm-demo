@@ -1,0 +1,10 @@
+---
+# tasks file for jamie.create-security-group
+- name: Create {{ sg_rule_desc }} Security group
+  ec2_group:
+    name: "{{ aws_project_name }} security group for {{ sg_rule_desc }}"
+    description: "Allows SSH in for {{ aws_project_name }}"
+    vpc_id: "{{ vpc_result.vpc.id }}"
+    region: "{{ aws_vpc_region }}"
+    rules: "{{ sg_rules }}"
+  register: "vpc_sec_group_{{ sg_rule_desc }}"

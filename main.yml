@@ -1,0 +1,112 @@
+- name: Create VPC
+  hosts: localhost
+  gather_facts: False
+  roles:
+    - role: jamie.create-vpc
+
+- name: Create Security Groups
+  hosts: localhost
+  gather_facts: False
+  roles:
+    - role: jamie.create-security-group
+      sg_rule_desc: SG_Web
+      sg_rules: "{{ sg_rules_web }}"   
+
+    - role: jamie.create-security-group
+      sg_rule_desc: SG_Lb
+      sg_rules: '{{ sg_rules_loadbalancer }}'
+
+
+- name: Provisioning ec2 instances
+  hosts: localhost
+  gather_facts: False
+  roles:
+    - role: jamie.create-ec2-instance
+      instance_count: 1
+      aws_instance_name_tag: loadbalancer
+      aws_instance_webtype_tag: frontend 
+      aws_security_group_id: "{{ vpc_sec_group_SG_Lb.group_id }}" 
+
+    - role: jamie.create-ec2-instance
+      instance_count: 2
+      aws_instance_name_tag: webservers
+      aws_instance_webtype_tag: frontend
+      aws_security_group_id: "{{ vpc_sec_group_SG_Web.group_id }}"
+
+ 
+- name: Configure webservers
+  hosts: tag_Name_webservers
+  remote_user: ec2-user  
+  become: yes
+  become_method: sudo
+  gather_facts: False
+  vars:
+    se_linux_required: "TRUE"
+    httpd_vhost_directory: /srv
+    ansible_ssh_private_key_file: "~/Desktop/key-pair-example.pem"
+  roles:
+    - role: jamie.install-httpd
+    - role: jamie.create-vhost
+      vhost_webserver_address: webserver.example.local
+      vhost_webserver_port: 80
+  handlers:
+    - name: httpd_restart
+      service:
+        name: httpd
+        state: restarted
+
+
+- name: Configure loadbalancer
+  hosts: tag_Name_loadbalancer
+  remote_user: ec2-user
+  become: yes
+  become_method: sudo
+  gather_facts: True
+  vars:
+    se_linux_required: "TRUE"
+    ansible_ssh_private_key_file: "~/Desktop/key-pair-example.pem"
+  roles:
+     - role: jamie.install-haproxy
+  handlers:
+    - name: haproxy_restart
+      service:
+        name: haproxy
+        state: restarted
+
+
+- name: Check loadbalancer is returning webpage
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - meta: refresh_inventory
+    - name: check loadbalancer for
+      uri:
+        url: "http://{{ item }}"
+        return_content: yes
+      register: webpage
+      with_items: "{{ groups['tag_Name_loadbalancer'] }}"
+      failed_when: "'webserver.example.local' not in webpage.content"
+    
+    - name: Output the loadbalancers IPs
+      vars:
+        msg: |
+             Your loadbalancer(s) are available at the following ip 
+             {{ item }}
+  
+      debug:
+        msg: "{{ msg.split('\n') }}"
+      with_items: "{{ groups['tag_Name_loadbalancer'] }}"
+      tags:
+        - final
+
+    - name: Output the webservers IPs
+      vars:
+        msg: |
+             Your webservers(s) are available at the following ip
+             {{ item }}
+
+      debug:
+        msg: "{{ msg.split('\n') }}"
+      with_items: "{{ groups['tag_Name_webservers'] }}"
+      tags:
+        - final

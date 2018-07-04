@@ -1,0 +1,51 @@
+---
+# tasks file for jamie.install-haproxy
+- name: Install HAProxy
+  yum:
+    name: haproxy
+    state: latest
+- name: Start and enable HAProxy
+  service:
+    name: haproxy
+    state: started
+    enabled: yes
+
+#Refresh in the inventory for the following config file variables
+- meta: refresh_inventory
+
+- name: Install HAProxy config file
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    mode: 644
+  notify: haproxy_restart
+
+- name: Enable SELinux
+  selinux:
+    policy: targeted
+    state: enforcing
+  when: se_linux_required is defined
+
+- name: Install semanage tool and dependancies
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - libselinux-python
+    - policycoreutils-python
+  when: se_linux_required is defined
+
+- name: Define port rule for http traffic is in place 
+  seport:
+    ports: 80
+    proto: tcp
+    setype: http_port_t
+    state: present
+  when: se_linux_required is defined
+
+- name: Set linux cap for haproxy binary
+  capabilities:
+    path: /usr/sbin/haproxy
+    capability: cap_net_bind_service+eip
+    state: present
+  notify: haproxy_restart
