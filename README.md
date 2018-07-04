@@ -14,7 +14,7 @@ SELinux ENABLED
 - Boto
 - Ansible
 - AWS account (this can all run on the free tier)
-- AWS SSH key-pair located at “~/Desktop/key-pair-example/pem”
+- AWS SSH key-pair located at “~/Desktop/key-pair-example.pem”
 
 ## Configurables
 - main.yml
