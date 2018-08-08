@@ -1,6 +1,6 @@
 # ansible-aws-vm-demo
 
-This is an example playbook designed to deploy webservers and loadbalancers in a redundant vm-based architecture on AWS.
+This is an example playbook designed to deploy webservers and loadbalancers in a HA vm-based architecture on AWS.
 
 If you are looking for a modular, idempotent example of provisioning infrastructure and then configuring it to serve a simple use case (i.e. learning Ansible) then this repo should serve as a good starting point.
 
